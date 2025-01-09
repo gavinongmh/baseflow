@@ -1,13 +1,13 @@
 import Link from "next/link";
 
 import PostCard from "@/components/cards/PostCard";
+import DataRenderer from "@/components/DataRenderer";
 import HomeFilter from "@/components/filters/HomeFilter";
 import LocalSearch from "@/components/search/LocalSearch";
 import { Button } from "@/components/ui/button";
 import ROUTES from "@/constants/routes";
-import { getPosts } from "@/lib/actions/post.action";
-import DataRenderer from "@/components/DataRenderer";
 import { EMPTY_POST } from "@/constants/states";
+import { getPosts } from "@/lib/actions/post.action";
 
 // const test = async () => {
 //   try {
