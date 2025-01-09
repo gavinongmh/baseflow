@@ -29,3 +29,7 @@ interface EditPostParams extends MakePostParams {
 interface GetPostParams {
   postId: string;
 }
+
+interface GetTagPostsParams extends Omit<PaginatedSearchParams, "filter"> {
+  tagId: string;
+}

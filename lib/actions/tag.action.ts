@@ -1,10 +1,10 @@
 import { FilterQuery } from "mongoose";
 
-import { Tag } from "@/database";
+import { Post, Tag } from "@/database";
 
 import action from "../handlers/action";
 import handleError from "../handlers/error";
-import { PaginatedSearchParamsSchema } from "../validations";
+import { GetTagPostsSchema, PaginatedSearchParamsSchema } from "../validations";
 
 export const getTags = async (
   params: PaginatedSearchParams
@@ -68,6 +68,62 @@ export const getTags = async (
     return {
       success: true,
       data: { tags: JSON.parse(JSON.stringify(tags)), isNext },
+    };
+  } catch (error) {
+    return handleError(error) as ErrorResponse;
+  }
+};
+
+export const getTagPosts = async (
+  params: GetTagPostsParams
+): Promise<ActionResponse<{ tag: Tag; posts: Post[]; isNext: boolean }>> => {
+  const validationResult = await action({
+    params,
+    schema: GetTagPostsSchema,
+  });
+
+  if (validationResult instanceof Error) {
+    return handleError(validationResult) as ErrorResponse;
+  }
+
+  const { tagId, page = 1, pageSize = 10, query } = params;
+  const skip = (Number(page) - 1) * pageSize;
+  const limit = Number(pageSize);
+
+  try {
+    const tag = await Tag.findById(tagId);
+    if (!tag) throw new Error("Tag not found");
+
+    const filterQuery: FilterQuery<typeof Post> = { tags: { $in: [tagId] } };
+
+    if (query) {
+      filterQuery.title = [
+        {
+          $regex: query,
+          $options: "i",
+        },
+      ];
+    }
+    const totalPosts = await Post.countDocuments(filterQuery);
+
+    const posts = await Post.find(filterQuery)
+      .select("_id title views comments upvotes downvotes author createdAt")
+      .populate([
+        { path: "author", select: "name image" },
+        { path: "tags", select: "name" },
+      ])
+      .skip(skip)
+      .limit(limit);
+
+    const isNext = totalPosts > skip + posts.length;
+
+    return {
+      success: true,
+      data: {
+        tag: JSON.parse(JSON.stringify(tag)),
+        posts: JSON.parse(JSON.stringify(posts)),
+        isNext,
+      },
     };
   } catch (error) {
     return handleError(error) as ErrorResponse;
